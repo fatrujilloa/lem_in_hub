@@ -1,0 +1,73 @@
+#include "../includes/lem_in.h"
+
+
+void        prt_path(t_path *path)
+{
+    int i = 0;
+
+    ft_printf("Endpoint %d, depth %d, path ", path->endpoint, path->depth);
+    while (i < path->depth)
+        ft_printf("%d ", path->path[i++]);
+    ft_printf(", depths ");
+    i = 0;
+    while (i < path->depth)
+        ft_printf("%d ", path->depths[i++]);
+    ft_printf("\n");
+}
+
+int         main()
+{
+    t_solution  *solution;
+    
+    solution = (t_solution*)malloc(sizeof(t_solution));
+    int i;
+    int j;
+
+    i = 0;
+    solution->nbr_paths = 1;
+    solution->used_vertices = (int**)malloc(size * sizeof(int*));
+    solution->paths = (t_path*)malloc(sizeof(t_path));
+    solution->paths->path = (int*)malloc(4 * sizeof(int));
+    solution->paths->path[0] = 0;
+    solution->paths->path[1] = 2;
+    solution->paths->path[2] = 5;
+    solution->paths->path[3] = 7;
+    solution->paths[0].depths = (int*)malloc(4 * sizeof(int));
+    solution->paths[0].depths[0] = 0;
+    solution->paths[0].depths[1] = 1;
+    solution->paths[0].depths[2] = 2;
+    solution->paths[0].depths[3] = 3;
+    solution->paths[0].endpoint = 7;
+    solution->paths[0].depth = 4;
+    ft_printf("Trying to print sol\n");
+    prt_path(&(solution->paths[0]));
+    while (i < 10)
+        solution->used_vertices[i++] = (int*)malloc(2 * sizeof(int));
+    i = 0;
+    while (i < 10)
+        solution->used_vertices[i++][0] = 0;
+    solution->used_vertices[2][0] = 1;
+    solution->used_vertices[5][0] = 1;
+    solution->used_vertices[2][1] = 1;
+    solution->used_vertices[5][1] = 2;
+    solution->max_length = 2;
+    graph = (int**)malloc(8 * sizeof(int*));
+    while (i < 8)
+    {
+        graph[i] = (int*)malloc(4 * sizeof(int));
+        j = 0;
+        while (g[i][j] != -1)
+            {
+                graph[i][j] = g[i][j];
+                j++;
+            } 
+        graph[i][j] = g[i][j];
+        i++;
+    }
+    prt_g(graph);
+
+
+    initialize(layer, size);
+    prt_layer(layer);
+    mbfs(graph, size, ngbs, solution, layer);
+    return (0);

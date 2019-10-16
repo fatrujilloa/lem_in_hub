@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   algorithm.c                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: ftrujill <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: ftrujill <ftrujill@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2019/10/11 09:39:54 by ftrujill          #+#    #+#             */
-/*   Updated: 2019/10/16 12:23:14 by ftrujill         ###   ########.fr       */
+/*   Updated: 2019/10/16 20:31:04 by ftrujill         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -259,19 +259,113 @@ int        mbfs(int **g, int *ngbs, t_solution *solution, t_layer *layer, t_path
     return (1);
 }   
 
-int         main()
+void         find_solution(t_path **possible, int n, int *nbr_steps, int *sol)
+{
+    int     i;
+    int     j;
+    int     sum_lengths;
+    int     max_length;
+    int     aux;
+
+    i = 1;
+    *sol = 0;
+    *nbr_steps = n + possible[0][0].depth - 2;
+    //ft_printf("For i = %d, nbr_steps %d", i - 1, *nbr_steps);
+    while (possible[i])
+    {
+        j = 0;
+        sum_lengths = 0;
+        max_length = possible[0][0].depth;
+        while (j <= i)
+        {
+            sum_lengths += possible[i][j].depth;
+            max_length = ft_max_int(max_length, possible[i][j++].depth);
+        }
+      // ft_printf("\n max_length %d, sum_lengths %d\n", max_length, sum_lengths);
+        if ((i + 1) * max_length < n + sum_lengths)
+        {
+            aux = ((n + sum_lengths) % (i + 1) == 0) ? (n + sum_lengths) / (i + 1) - 2 : (n + sum_lengths) / (i + 1) - 1;
+        //               ft_printf("For i = %d, Here and aux is %d, nbr_steps %d", i, aux, *nbr_steps);
+            if (aux < *nbr_steps)
+            {
+                *nbr_steps = aux;
+                *sol = i;
+            }
+        }
+        i++;
+    }
+}
+
+void        prt_just_path(t_path *path)
+{
+    int i;
+    
+    i = 0;
+    while (i < path->depth)
+        ft_printf("%d ", path->path[i++]);
+    ft_printf("\n");
+}
+
+void        print_final_solution(t_path **possible, int ants_nbr, int nbr_steps, int sol)
+{
+    int i;
+    int j;
+    int k;
+    t_path *path;
+
+    i = -1;
+    while (++i < nbr_steps)
+    {
+        j = 0;
+        while (j <= sol)
+        {
+            path = &possible[sol][j];
+            prt_just_path(path);
+            k = 1;
+            ft_printf(". ");
+            while (k < path->depth - 1)
+            {
+                if (i >= path->depth - 1)
+                {
+                    if (i > nbr_steps - path->depth)
+                        (k <= nbr_steps - i) ? ft_printf(". ") : ft_printf("X ");
+                }
+                    
+                else
+                {
+                    (k > i) ? ft_printf(". ") : ft_printf("X ");
+                }
+                k++;
+            }
+            ft_printf(". \n");
+            j++;
+        }
+        ft_printf("\n\n\n");
+    }
+}
+
+int         main(int argc, char **argv)
 {
     t_layer     *layer;
-    int         g[][5] = {{1, 2, 7, 9, -1}, {0, 4, -1}, {0, 3, 5, -1}, {2, 6, -1}, {1, 5, -1}, {2, 4, 8, 10, -1}, {3, 10, -1}, {0, 8, -1}, {7, 5, -1}, {0, 10, -1}, {5, 6, 9, -1}};
-    int         ngbs[] = {4, 2, 3, 2, 2, 4, 2, 2, 2, 2, 3};
-    //int         g[][5] = {{1, 2, -1}, {0, 3, -1}, {0, 3, -1}, {1, 2, -1}};
-    //int         ngbs[] = {2, 2, 2, 2};
+   // int         g[][5] = {{1, 2, 7, 9, -1}, {0, 4, -1}, {0, 3, 5, -1}, {2, 6, -1}, {1, 5, -1}, {2, 4, 8, 10, -1}, {3, 10, -1}, {0, 8, -1}, {7, 5, -1}, {0, 10, -1}, {5, 6, 9, -1}};
+   // int         ngbs[] = {4, 2, 3, 2, 2, 4, 2, 2, 2, 2, 3};
+    // int         g[][5] = {{1, 2, 7, 9, -1}, {0, 4, -1}, {0, 3, 5, -1}, {2, 6, -1}, {1, 5, -1}, {2, 4, 8, 10, -1}, {3, 10, -1}, {0, 8, -1}, {7, 5, -1}, {0, 10, -1}, {5, 6, 9, -1}};
+   // int         ngbs[] = {4, 2, 3, 2, 2, 4, 2, 2, 2, 2, 3};
+    int         g[][6] = {{1, 2, 5, 7, 10, -1}, {0, 10, -1}, {0, 3, -1}, {2, 4, -1}, {3, 10, -1}, {0, 6, -1}, {5, 10, -1}, {0, 8, -1}, {7, 9, -1}, {8, 10, -1}, {0, 1, 4, 6, 9, -1}};
+    int         ngbs[] = {5, 2, 2, 2, 2, 2, 2, 2, 2, 2, 5};
+    int         ants_nbr;
+    int         sol;
+    int         nbr_steps;
+
     int         size = 11;
     int         l;
     int         **graph;
     t_solution  *solution;
     t_path         **possible;
 
+    if (argc != 2)
+        return (0);
+    ants_nbr = ft_atoi(argv[1]);
     layer = (t_layer*)malloc(sizeof(t_layer));
     solution = (t_solution*)malloc(sizeof(t_solution));
 
@@ -312,5 +406,8 @@ int         main()
     {
     }
     prt_possible(possible);
+    find_solution(possible, ants_nbr, &nbr_steps, &sol);
+    ft_printf("\nAnd the right solution with %d ants is the one with %d path(s) and it takes %d step(s)\n\n", ants_nbr, sol + 1, nbr_steps);
+    //print_final_solution(possible, ants_nbr, nbr_steps, sol);
     return (0);
 }
