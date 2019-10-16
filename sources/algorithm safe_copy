@@ -1,16 +1,133 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   algorithm.c                                        :+:      :+:    :+:   */
+/*   algorithm copy.c                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: ftrujill <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2019/10/11 09:39:54 by ftrujill          #+#    #+#             */
-/*   Updated: 2019/10/16 12:23:14 by ftrujill         ###   ########.fr       */
+/*   Updated: 2019/10/16 11:47:23 by ftrujill         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../includes/lem_in.h"
+
+void        initialize(t_layer *layer, int size)
+{
+    t_path  *path;
+
+    layer->size = size;
+    layer->nbr_paths = 1;
+    layer->sol_depth = size + 1;
+    layer->min_depth = 1;
+    layer->paths = (t_path*)malloc(sizeof(t_path));
+    path = layer->paths;
+    path->endpoint = 0;
+    path->depth = 1;
+    path->path = (int*)malloc(2 * sizeof(int));
+    path->path[0] = 0;
+    path->path[1] = -1;
+    path->depths = (int*)malloc(2 * sizeof(int));
+    path->depths[0] = 1;
+}
+
+void        initialize_new_layer(t_layer *new_layer, t_layer *layer, int *ngbs)
+{
+    int     i;
+    int     s;
+    int     v;
+
+    i = 0;
+    s = 0;
+    while (i < layer->nbr_paths)
+        s += ngbs[layer->paths[i++].endpoint];
+    new_layer->nbr_paths = 0;
+    new_layer->paths = (t_path*)malloc((s + 1) * sizeof(t_path));
+    new_layer->size = layer->size;
+    new_layer->sol_depth = layer->size + 1;
+    //new_layer->min_depth = layer->min_depth;
+}
+
+void    prt_g(int **g, int size)
+{
+    int i;
+    int j;
+
+    i = 0;
+    while (i < size)
+    {
+        j = 0;
+        while (g[i][j] != -1)
+            ft_printf("%d ", g[i][j++]);
+        i++;
+        ft_printf("\n");
+    }
+}
+
+void        prt_path(t_path *path)
+{
+    int i = 0;
+
+    ft_printf("Endpoint %d, depth %d, path ", path->endpoint, path->depth);
+    while (i < path->depth)
+        ft_printf("%d ", path->path[i++]);
+    ft_printf(", depths ");
+    i = 0;
+    while (i < path->depth)
+        ft_printf("%d ", path->depths[i++]);
+    ft_printf("\n");
+}
+
+void        prt_layer(t_layer *layer)
+{
+    int     i = 0;
+    t_path  *path;
+    ft_printf("\nSize %d, nbr of paths %d, sol_depth %d, min_depth %d\n", layer->size, layer->nbr_paths, layer->sol_depth, layer->min_depth);
+    while (i < layer->nbr_paths)
+        prt_path(&(layer->paths[i++]));    
+}
+
+void        copy_path(t_path *source, t_path *dest)
+{
+    int i;
+
+        ft_printf("??HERE\n");
+    dest->endpoint = source->endpoint;
+        ft_printf("?HERE\n");
+    dest->depth = source->depth;
+    dest->path = (int*)malloc(source->depth * sizeof(int));
+    dest->depths = (int*)malloc(source->depth * sizeof(int));
+    i = 0;
+        ft_printf("HERE\n");
+    while (i < source->depth)
+    {
+        dest->path[i] = source->path[i];
+        dest->depths[i] = source->depths[i];
+        i++;
+    }
+        ft_printf("HERE1\n");
+}
+
+void        copy_solution(t_layer *new_layer, t_path *path)
+{
+    int j;
+    int n;
+
+    ft_printf("\nEntering Copy_solution\n");
+    n = new_layer->nbr_paths;
+    new_layer->paths[n].path = (int*)malloc((path->depth) * sizeof(int));
+    new_layer->paths[n].depths = (int*)malloc((path->depth) * sizeof(int));
+    j = -1;
+    while (++j < path->depth)
+    {
+        new_layer->paths[n].path[j] = path->path[j];
+        new_layer->paths[n].depths[j] = path->depths[j];
+    }
+    new_layer->paths[n].depth = path->depth;
+    new_layer->paths[n].endpoint = new_layer->size - 1;
+    new_layer->nbr_paths += 1;
+    new_layer->sol_depth = path->depths[path->depth - 1];
+}
 
 void        add_path(t_layer *new_layer, t_path *path, int *visited, int w, int used_edge) //Add the path (path + w) to the new_layer
 {
@@ -39,10 +156,16 @@ void        add_path(t_layer *new_layer, t_path *path, int *visited, int w, int 
     new_layer->paths[n].endpoint = w;
     new_layer->nbr_paths += 1;
     if (w == new_layer->size - 1)
+    {
+        ft_printf("\nThis is the solution \n");
+        prt_path(&new_layer->paths[n]);
+        ft_printf("\n");
         if (new_layer->sol_depth > path->depth + 1)
             new_layer->sol_depth = path->depth + 1;
+    }
     if (w != new_layer->size - 1)
         visited[w] = path->depth + 1;
+    prt_path(&new_layer->paths[n]);
 }
 
 void        update(t_layer *new_layer, int *visited, int *updated)
@@ -59,6 +182,7 @@ void        update(t_layer *new_layer, int *visited, int *updated)
     {
         if (updated[i] == 0)
             continue ;
+        ft_printf("The vertex %d has been updated\n and visited[%d] has the value %d\n", i, i, visited[i]);
         j = -1;
         while (++j < n)
         {
@@ -115,24 +239,30 @@ t_layer     *next_layer(int **g, int *ngbs, t_layer *layer, int *visited, t_solu
             continue ;
         if (path->depth > 1 && solution->used_vertices[path->endpoint][0] && !solution->used_vertices[path->path[path->depth - 2]][0])
             {
+                //ft_printf("Endp %d, Position %d, Adding %d\n", path->endpoint, (solution->used_vertices[path->endpoint][1]) - 1, solution->paths[0].path[1]);
                 add_path(new_layer, path, visited, solution->paths[solution->used_vertices[path->endpoint][1]].path[(solution->used_vertices[path->endpoint][2]) - 1], 1);
                 continue ;
             }
         j = -1;
         while ((w = g[path->endpoint][++j]) != -1)
         {
+            ft_printf("Here1\n");
             if (path->endpoint == 0 && solution->used_vertices[w][0])
                 continue ;
             if (visited[w] == 0)
                 add_path(new_layer, path, visited, w, 0);
-            else if (visited[w] > path->depth + 1)
+            else if (visited[w] > path->depth + 1) // + CAPACITY
                 {
                     add_path(new_layer, path, visited, w, 0);
                     updated[w] = 1;
                 }
         }
     }
+    ft_printf("Printing layer before update:\n");
+    prt_layer(new_layer);
     update(new_layer, visited, updated);
+    ft_printf("Printing layer after update:\n");
+    prt_layer(new_layer);
     min_depth(new_layer);
     return (new_layer);
 }
@@ -153,29 +283,39 @@ void        merge_paths(t_solution *solution, int pos, int i, int p) //The posit
     t_path  *old_path;
     t_path  *new_path;
 
+    ft_printf("\nTrying to merge at new path at position %d with old path # %d at position %d\n", pos, i, p);
     tmp = (t_path*)malloc(sizeof(t_path));
     tmp2 = (t_path*)malloc(sizeof(t_path));
+    ft_printf("Got HERE\n");
     old_path = &solution->paths[i];
+    prt_path(old_path);
     new_path = &solution->paths[solution->nbr_paths];
+        ft_printf("HERE00\n");
     copy_path(old_path, tmp);
     j = -1;
+        ft_printf("HERE0\n");
     old_path->path = (int*)malloc(solution->size * sizeof(int));
     old_path->depths = (int*)malloc(solution->size * sizeof(int));
+        ft_printf("HERE\n");
     while (++j <= pos)
     {
         old_path->path[j] = new_path->path[j];
         old_path->depths[j] = new_path->depths[j];
     }
     j = 0;
+        ft_printf("HERE1\n");
     while (p + j < tmp->depth)
     {
         old_path->path[pos + j] = tmp->path[p + j];
         old_path->depths[pos + j] = tmp->depths[p + j];
         j++;
     }
+        ft_printf("HERE2\n");
     old_path->depth = pos + j;
     old_path->endpoint = solution->size - 1;
     j = -1;
+    ft_printf("Printing modified old_path\n");
+    prt_path(old_path);
     copy_path(new_path, tmp2);
     while (++j < p)
     {
@@ -185,6 +325,7 @@ void        merge_paths(t_solution *solution, int pos, int i, int p) //The posit
         solution->used_vertices[new_path->path[j]][1] = solution->nbr_paths;
         solution->used_vertices[new_path->path[j]][2] = j;
     }
+        ft_printf("HERE3\n");
     j = 0;
     while (pos + j + 2 < tmp2->depth)
     {
@@ -192,17 +333,25 @@ void        merge_paths(t_solution *solution, int pos, int i, int p) //The posit
         new_path->depths[p + j] = tmp2->depths[pos + j + 2];
         j++;
     }
+    ft_printf("HERE4\n");
     new_path->depth = p + j;
     new_path->endpoint = solution->size - 1;
+    ft_printf("Printing modified new_path\n");
+    prt_path(new_path);
     reset_path(tmp);
     reset_path(tmp2);
     j = -1;
+        ft_printf("HERE5\n");
+    prt_path(old_path);
+    prt_path(new_path);
     while (++j < old_path->depth)
     {
+                ft_printf("here5\n");
         solution->used_vertices[old_path->path[j]][0] = 1;
         solution->used_vertices[old_path->path[j]][1] = i;
         solution->used_vertices[old_path->path[j]][2] = j;
     }
+        ft_printf("HERE6\n");
 }
 
 void        update_solution(t_path *path, t_solution *solution, t_path **possible)
@@ -214,6 +363,7 @@ void        update_solution(t_path *path, t_solution *solution, t_path **possibl
     new_path = &solution->paths[solution->nbr_paths];
     copy_path(path, new_path);
     i = 1;
+        ft_printf("HERE\n");
     while (i < new_path->depth - 1)
     {
         if (solution->used_vertices[new_path->path[i]][0] != 0
@@ -225,6 +375,7 @@ void        update_solution(t_path *path, t_solution *solution, t_path **possibl
         else
             i++;
     }
+        ft_printf("HERE1\n");
     i = -1;
     while (++i < new_path->depth)
     {
@@ -233,6 +384,7 @@ void        update_solution(t_path *path, t_solution *solution, t_path **possibl
         solution->used_vertices[new_path->path[i]][2] = i;
     }
     solution->nbr_paths += 1;
+        ft_printf("HERE2\n");
     i = 0;
     while (possible[i])
         i++;
@@ -241,6 +393,43 @@ void        update_solution(t_path *path, t_solution *solution, t_path **possibl
     while (++j < solution->nbr_paths)
         copy_path(&solution->paths[j], &possible[i][j]);
     possible[i + 1] = NULL;
+        ft_printf("HERE3\n");
+}
+
+void    prt_solution(t_solution *solution)
+{
+    int i;
+
+    ft_printf("\nThe size is %d, nbr_paths %d, max_length %d\n", solution->size, solution->nbr_paths, solution->max_length);
+    i = 0;
+    while (i < solution->nbr_paths)
+        prt_path(&solution->paths[i++]);
+    i = 0;
+    while (i < solution->size)
+    {
+        if (solution->used_vertices[i][0])
+            ft_printf("\nThe vertex %d is used by the path %d at position %d\n", i, solution->used_vertices[i][1], solution->used_vertices[i][2]);
+        i++;
+    }
+}
+
+void    prt_possible(t_path **possible)
+{
+    int i;
+    int j;
+
+    i = 0;
+    while (possible[i])
+    {
+        if (i == 0)
+            ft_printf("Shortest path\n");
+        else
+            ft_printf("Shortests %d paths\n", i + 1);
+        j = 0;
+        while (j < i + 1)
+            prt_path(&possible[i][j++]);
+        i++;
+    }
 }
 
 int        mbfs(int **g, int *ngbs, t_solution *solution, t_layer *layer, t_path **possible) //Modified Breadth First Search
@@ -254,15 +443,24 @@ int        mbfs(int **g, int *ngbs, t_solution *solution, t_layer *layer, t_path
         if (layer->nbr_paths == 0)
             return (0);
         layer = next_layer(g, ngbs, layer, visited, solution);
+        prt_layer(layer);
+        ft_printf("\nlayer->sol_depth = %d, layer->min_depth = %d, solution->max_length = %d\n",layer->sol_depth, layer->min_depth, solution->max_length);
     }
+    ft_printf("We got out\n");
+    prt_layer(layer);
     update_solution(layer->paths, solution, possible);
+    ft_printf("\nPrinting possible\n");
+    prt_possible(possible);
+    ft_printf("\nPrinting solution\n");
+    prt_solution(solution);
     return (1);
 }   
+
 
 int         main()
 {
     t_layer     *layer;
-    int         g[][5] = {{1, 2, 7, 9, -1}, {0, 4, -1}, {0, 3, 5, -1}, {2, 6, -1}, {1, 5, -1}, {2, 4, 8, 10, -1}, {3, 10, -1}, {0, 8, -1}, {7, 5, -1}, {0, 10, -1}, {5, 6, 9, -1}};
+    int         g[][5] = {{1, 2, 7, 9, -1}, {0, 4, -1}, {0, 3, 5, -1}, {2, 6, -1}, {1, 5, -1}, {2, 4, 8, 10, -1}, {3, 10, -1}, {0, 8, -1}, {7, 5, -1}, {0, 10}, {5, 6, 9, -1}};
     int         ngbs[] = {4, 2, 3, 2, 2, 4, 2, 2, 2, 2, 3};
     //int         g[][5] = {{1, 2, -1}, {0, 3, -1}, {0, 3, -1}, {1, 2, -1}};
     //int         ngbs[] = {2, 2, 2, 2};
@@ -305,9 +503,11 @@ int         main()
         i++;
     }
     prt_g(graph, size);
+
     possible = (t_path**)malloc(size * sizeof(t_path*));
     possible[0] = NULL;
     initialize(layer, size);
+    prt_layer(layer);
     while (mbfs(graph, ngbs, solution, layer, possible))
     {
     }

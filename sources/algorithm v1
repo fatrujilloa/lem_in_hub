@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   algorithm.c                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: ftrujill <ftrujill@student.42.fr>          +#+  +:+       +#+        */
+/*   By: ftrujill <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2019/10/11 09:39:54 by ftrujill          #+#    #+#             */
-/*   Updated: 2019/10/11 19:25:59 by ftrujill         ###   ########.fr       */
+/*   Updated: 2019/10/11 20:40:22 by ftrujill         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,7 +18,7 @@ void        initialize(t_layer *layer, int size)
 
     layer->size = size;
     layer->nbr_paths = 1;
-    layer->sol_depth = size + 1;
+    layer->sol_depth = 0;
     layer->sol = 0;
     layer->paths = (t_path*)malloc(sizeof(t_path));
     path = layer->paths;
@@ -116,7 +116,6 @@ void        add_path(t_layer *new_layer, t_path *path, int *visited, int w) //Ad
         if (new_layer->sol_depth > path->depth + 1)
             new_layer->sol_depth = path->depth + 1;
     }
-    visited[w] = path->depth + 1;
 }
 
 void        update(t_layer *new_layer, int *visited, int *updated)
@@ -151,7 +150,7 @@ void        update(t_layer *new_layer, int *visited, int *updated)
     }
 }
 
-t_layer     *next_layer(int **g, int *ngbs, t_layer *layer, int *visited, t_solution *solution)
+t_layer     *next_layer(int **g, int size, int *ngbs, t_layer *layer, int *visited)
 {
     int         i;
     int         j;
@@ -160,7 +159,7 @@ t_layer     *next_layer(int **g, int *ngbs, t_layer *layer, int *visited, t_solu
     t_path      *path;
     t_layer     *new_layer;
 
-    updated = (int*)ft_memalloc(layer->size * sizeof(int));
+    updated = (int*)ft_memalloc(size * sizeof(int));
     new_layer = (t_layer*)malloc(sizeof(t_layer));
     initialize_new_layer(new_layer, layer, ngbs);
     i = -1;
@@ -169,25 +168,16 @@ t_layer     *next_layer(int **g, int *ngbs, t_layer *layer, int *visited, t_solu
         path = &(layer->paths[i]);
         if (updated[path->endpoint] != 0)
             continue ;
-        if (path->endpoint == layer->size - 1 && path->depth == layer->sol_depth && new_layer->sol == 0)
+        else if (path->endpoint == size - 1 && path->depth == layer->sol_depth && new_layer->sol == 0)
             {
-                add_path(new_layer, path, visited, layer->size - 1);
+                add_path(new_layer, path, visited, w);
                 continue;
             }
-        if (path->endpoint == layer->size - 1)
+        else if (path->endpoint == size - 1)
             continue ;
-        if (path->depth > 1 && solution->used_vertices[path->endpoint][0] && !solution->used_vertices[path->path[path->depth - 2]][0])
-            {
-                ft_printf("Endp %d, Position %d, Adding %d\n", path->endpoint, (solution->used_vertices[path->endpoint][1]) - 1, solution->paths[0].path[1]);
-                add_path(new_layer, path, visited, solution->paths[0].path[(solution->used_vertices[path->endpoint][1]) - 1]);
-                                write(1, "here", 4);
-                continue ;
-            }
         j = -1;
         while ((w = g[path->endpoint][++j]) != -1)
         {
-            if (path->endpoint == 0 && solution->used_vertices[w][0])
-                continue ;
             if (visited[w] == 0)
                 add_path(new_layer, path, visited, w);
             else if (visited[w] > path->depth) // + CAPACITY
@@ -202,18 +192,15 @@ t_layer     *next_layer(int **g, int *ngbs, t_layer *layer, int *visited, t_solu
     return (new_layer);
 }
 
-void        mbfs(int **g, int size, int *ngbs, t_solution *solution, t_layer *layer) //Modified Breadth First Search
+void        mbfs(int **g, int size, int *ngbs, int l, t_layer *layer) //Modified Breadth First Search
 {
     int     *visited;
 
-    ft_printf("Trying to print sol\n");
-    prt_path(&(solution->paths[0]));
     visited = (int*)ft_memalloc(size * sizeof(int));
-    visited[0] = 1;
     while(!layer->sol)
     {
-        layer = next_layer(g, ngbs, layer, visited, solution);
-        prt_layer(layer);
+        layer = next_layer(g, size, ngbs, layer, visited);
+       // prt_layer(layer);
     }
 }
 
@@ -225,45 +212,13 @@ int         main()
     int         size = 8;
     int         l;
     int         **graph;
-    t_solution  *solution;
+    t_solution  solution;
     
     layer = (t_layer*)malloc(sizeof(t_layer));
-    solution = (t_solution*)malloc(sizeof(t_solution));
-
-    
-    
-
-    int i;
+        int i;
     int j;
+
     i = 0;
-    solution->nbr_paths = 1;
-    solution->used_vertices = (int**)malloc(size * sizeof(int*));
-    solution->paths = (t_path*)malloc(sizeof(t_path));
-    solution->paths->path = (int*)malloc(4 * sizeof(int));
-    solution->paths->path[0] = 0;
-    solution->paths->path[1] = 2;
-    solution->paths->path[2] = 5;
-    solution->paths->path[3] = 7;
-    solution->paths[0].depths = (int*)malloc(4 * sizeof(int));
-    solution->paths[0].depths[0] = 0;
-    solution->paths[0].depths[1] = 1;
-    solution->paths[0].depths[2] = 2;
-    solution->paths[0].depths[3] = 3;
-    solution->paths[0].endpoint = 7;
-    solution->paths[0].depth = 4;
-    ft_printf("Trying to print sol\n");
-    prt_path(&(solution->paths[0]));
-    while (i < 10)
-        solution->used_vertices[i++] = (int*)malloc(2 * sizeof(int));
-    i = 0;
-    while (i < 10)
-        solution->used_vertices[i++][0] = 0;
-    solution->used_vertices[2][0] = 1;
-    solution->used_vertices[5][0] = 1;
-    solution->used_vertices[2][1] = 1;
-    solution->used_vertices[5][1] = 2;
-    i = 0;
-    solution->max_length = 2;
     graph = (int**)malloc(8 * sizeof(int*));
     while (i < 8)
     {
@@ -278,10 +233,8 @@ int         main()
         i++;
     }
     prt_g(graph);
-
-
     initialize(layer, size);
     prt_layer(layer);
-    mbfs(graph, size, ngbs, solution, layer);
+    mbfs(graph, size, ngbs, 0, layer);
     return (0);
 }
